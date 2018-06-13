@@ -6,7 +6,7 @@ const notFoundHandler = require('./server/middlewares/notFoundHandler')
 const createAPIRoutes = require('./server/routes')
 const createWeb3 = require('./server/createWeb3')
 
-/* :: () -> Koa */
+/* :: (?object) -> Koa */
 const createServer = ({
   prefix = false,
   ethereumJsonRPC = 'http://localhost:8546',
