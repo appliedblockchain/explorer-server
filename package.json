@@ -4,7 +4,7 @@
   "description": "Server & client base for Applied Blockchain Block explorer",
   "author": "Tahseen Malik <tahseen@appliedblockchain.com> (https://appliedblockchain.com/)",
   "license": "MIT",
-  "main": "server.js",
+  "main": "index.js",
   "dependencies": {
     "@appliedblockchain/bdash": "^0.2.1",
     "abi-decoder": "^1.1.0",
