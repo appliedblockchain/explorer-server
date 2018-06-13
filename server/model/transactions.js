@@ -1,5 +1,5 @@
 'use strict'
-const { get, isNil, pickBy, first } = require('lodash')
+const { get, isNil, pickBy, first, isUndefined } = require('lodash')
 const abiDecoder = require('abi-decoder')
 const { prefixHex } = require('@appliedblockchain/bdash')
 const getNetworkConfig = require('../getNetworkConfig')
@@ -9,7 +9,7 @@ const getNetworkConfig = require('../getNetworkConfig')
  behaviour which is resolved using get().
  */
 
-/* :: (object, object) -> Promise<object> */
+/* :: (Web3, object) -> Promise<object> */
 const getTransactions = async (web3, { limit = 10 } = {}) => {
   const currBlockNumber = await web3.eth.getBlockNumber()
   const txs = []
@@ -36,7 +36,7 @@ const getTransactions = async (web3, { limit = 10 } = {}) => {
 
 
 
-/* :: (object[], string, string[]) -> object[] */
+/* :: (object[], string, string[], Web3) -> object[] */
 const getEventParams = (inputs, data, topics, web3) => {
   const decodedParams = web3.eth.abi.decodeLog(inputs, data, topics.slice(1))
   const params = inputs.map((input, idx) => ({
@@ -52,11 +52,15 @@ const getEventParams = (inputs, data, topics, web3) => {
  get the event name and params using the contract ABI.
  */
 
-/* :: (object, Array<object>) -> Array<object> */
+/* :: (object, Array<object>, Web3) -> Array<object> */
 const getEventLogs = (eventSigs, logs, web3) => {
   const addInfo = (log) => { /* [1] */
     const [ eventSig ] = log.topics
     const eventABI = eventSigs[eventSig]
+
+    if (isUndefined(eventABI)) { /* [2] */
+      return log
+    }
 
     const { name } = eventABI
     const params = eventABI.inputs.length > 0
@@ -71,7 +75,7 @@ const getEventLogs = (eventSigs, logs, web3) => {
 
 /** [1]. Given a contracts ABI return { [eventSig]: eventABI } */
 
-/* :: object[] -> object */
+/* :: (object[], Web3) -> object */
 const getEventSigs = (contractABI, web3) => contractABI
   .filter(({ type }) => type === 'event')
   .reduce((sigs, eventABI) => ({ /* [1] */
@@ -79,7 +83,7 @@ const getEventSigs = (contractABI, web3) => contractABI
     [web3.eth.abi.encodeEventSignature(eventABI)]: eventABI
   }), {})
 
-/* :: string -> ?object */
+/* :: (object, string) -> ?object */
 const getContractInfo = (contracts, address) => {
   const hasAddress = ({ deployments = [] }) =>
     deployments.some(deployment => address === deployment.address)
@@ -88,7 +92,7 @@ const getContractInfo = (contracts, address) => {
   return first(Object.values(contract))
 }
 
-/* :: (object, string, string) -> Promise<object> */
+/* :: (Web3, string, string) -> Promise<object> */
 const getTransaction = async (web3, txHash, networkConfigPath) => {
   const [ transaction, { logs } ] = await Promise.all([
     web3.eth.getTransaction(prefixHex(txHash)),
