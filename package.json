@@ -1,9 +1,10 @@
 {
-  "name": "@appliedblockchain/block-explorer",
+  "name": "@appliedblockchain/block-explorer-server",
   "version": "0.1.0",
   "description": "Server & client base for Applied Blockchain Block explorer",
   "author": "Tahseen Malik <tahseen@appliedblockchain.com> (https://appliedblockchain.com/)",
   "license": "MIT",
+  "main": "server.js",
   "dependencies": {
     "@appliedblockchain/bdash": "^0.2.1",
     "abi-decoder": "^1.1.0",
@@ -22,5 +23,9 @@
     "block explorer",
     "web3",
     "applied blockchain"
-  ]
+  ],
+  "devDependencies": {
+    "@appliedblockchain/eslint-config": "^2.2.0",
+    "eslint": "^4.19.1"
+  }
 }
