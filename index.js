@@ -8,7 +8,7 @@ const createWeb3 = require('./server/createWeb3')
 
 /* :: () -> Koa */
 const createServer = ({
-  prefix = '/',
+  prefix = false,
   ethereumJsonRPC = 'http://localhost:8546',
   networkConfigPath = path.resolve('./config.json')
 } = {}) => {
