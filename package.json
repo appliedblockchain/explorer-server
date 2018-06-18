@@ -2,9 +2,24 @@
   "name": "@appliedblockchain/block-explorer-server",
   "version": "0.1.0",
   "description": "Server component for Applied Blockchain block explorer",
+  "license": "UNLICENSED",
+  "repository": "appliedblockchain/block-explorer-server",
   "author": "Tahseen Malik <tahseen@appliedblockchain.com> (https://appliedblockchain.com/)",
-  "license": "MIT",
   "main": "index.js",
+  "scripts": {
+    "postversion": "git push && git push --tags",
+    "release:patch": "npm version patch && npm publish",
+    "release:minor": "npm version minor && npm publish",
+    "release:major": "npm version major && npm publish"
+  },
+  "keywords": [
+    "ethereum",
+    "block explorer",
+    "web3",
+    "applied blockchain"
+  ],
+  "bugs": "https://github.com/appliedblockchain/block-explorer-server/issues",
+  "homepage": "https://github.com/appliedblockchain/block-explorer-server#readme",
   "dependencies": {
     "@appliedblockchain/bdash": "^0.2.1",
     "abi-decoder": "^1.1.0",
@@ -18,12 +33,6 @@
     "signale": "^1.0.1",
     "web3": "1.0.0-beta.33"
   },
-  "keywords": [
-    "ethereum",
-    "block explorer",
-    "web3",
-    "applied blockchain"
-  ],
   "devDependencies": {
     "@appliedblockchain/eslint-config": "^2.2.0",
     "eslint": "^4.19.1"
