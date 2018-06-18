@@ -1,7 +1,7 @@
 {
   "name": "@appliedblockchain/block-explorer-server",
   "version": "0.1.0",
-  "description": "Server & client base for Applied Blockchain Block explorer",
+  "description": "Server component for Applied Blockchain block explorer",
   "author": "Tahseen Malik <tahseen@appliedblockchain.com> (https://appliedblockchain.com/)",
   "license": "MIT",
   "main": "index.js",

@@ -6,15 +6,20 @@ const notFoundHandler = require('./server/middlewares/notFoundHandler')
 const createAPIRoutes = require('./server/routes')
 const createWeb3 = require('./server/createWeb3')
 
+const defaultOpts = {
+  prefix: false,
+  ethereumJsonRPC: 'http://localhost:8546',
+  networkConfigPath: path.resolve('./config.json'),
+  useStandardHandler: true,
+  txHandler: null
+}
+
 /* :: (?object) -> Koa */
-const createServer = ({
-  prefix = false,
-  ethereumJsonRPC = 'http://localhost:8546',
-  networkConfigPath = path.resolve('./config.json')
-} = {}) => {
+const createServer = (opts = {}) => {
+  const options = { ...defaultOpts, ...opts }
   const app = new Koa()
-  const web3 = createWeb3(ethereumJsonRPC)
-  const api = createAPIRoutes(prefix, web3, networkConfigPath)
+  const web3 = createWeb3(options.ethereumJsonRPC)
+  const api = createAPIRoutes(web3, options)
 
   app
     .use(errorHandler)

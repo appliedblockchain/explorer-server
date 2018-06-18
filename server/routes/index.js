@@ -5,12 +5,13 @@ const createTxRouter = require('./transaction')
 
 /** Routes */
 
-/* :: string -> Router */
-const createAPIRoutes = (prefix, web3, networkConfigPath) => {
-  const config = prefix ? { prefix } : {}
+/* :: (string, object) -> Router */
+const createAPIRoutes = (web3, opts) => {
+  const config = opts.prefix ? { prefix: opts.prefix } : {}
   const api = new Router(config)
+
   const blocks = createBlockRouter(web3)
-  const transactions = createTxRouter(web3, networkConfigPath)
+  const transactions = createTxRouter(web3, opts)
 
   api
     .use(blocks.routes())

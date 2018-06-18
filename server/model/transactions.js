@@ -1,8 +1,7 @@
 'use strict'
-const { get, isNil, pickBy, first, isUndefined } = require('lodash')
-const abiDecoder = require('abi-decoder')
+const { get, isFunction } = require('lodash')
 const { prefixHex } = require('@appliedblockchain/bdash')
-const getNetworkConfig = require('../getNetworkConfig')
+const { standardTxHandler } = require('../standardTxHandler')
 
 /**
  [1]. @NOTE: web3.eth.getBlock() is returning null sometimes. This is unexpected
@@ -35,96 +34,29 @@ const getTransactions = async (web3, { limit = 10 } = {}) => {
 }
 
 
-
-/* :: (object[], string, string[], Web3) -> object[] */
-const getEventParams = (inputs, data, topics, web3) => {
-  const decodedParams = web3.eth.abi.decodeLog(inputs, data, topics.slice(1))
-  const params = inputs.map((input, idx) => ({
-    ...input,
-    value: decodedParams[idx]
-  }))
-
-  return params
-}
-
-/**
- [1]. Since we know that the transaction is a calling a known contract we can
- get the event name and params using the contract ABI.
- */
-
-/* :: (object, Array<object>, Web3) -> Array<object> */
-const getEventLogs = (eventSigs, logs, web3) => {
-  const addInfo = (log) => { /* [1] */
-    const [ eventSig ] = log.topics
-    const eventABI = eventSigs[eventSig]
-
-    if (isUndefined(eventABI)) { /* [2] */
-      return log
-    }
-
-    const { name } = eventABI
-    const params = eventABI.inputs.length > 0
-      ? getEventParams(eventABI.inputs, log.data, log.topics, web3)
-      : null
-
-    return { ...log, name, params }
-  }
-
-  return logs.map(addInfo)
-}
-
-/** [1]. Given a contracts ABI return { [eventSig]: eventABI } */
-
-/* :: (object[], Web3) -> object */
-const getEventSigs = (contractABI, web3) => contractABI
-  .filter(({ type }) => type === 'event')
-  .reduce((sigs, eventABI) => ({ /* [1] */
-    ...sigs,
-    [web3.eth.abi.encodeEventSignature(eventABI)]: eventABI
-  }), {})
-
-/* :: (object, string) -> ?object */
-const getContractInfo = (contracts, address) => {
-  const hasAddress = ({ deployments = [] }) =>
-    deployments.some(deployment => address === deployment.address)
-  const contract = pickBy(contracts, hasAddress)
-
-  return first(Object.values(contract))
-}
-
-/* :: (Web3, string, string) -> Promise<object> */
-const getTransaction = async (web3, txHash, networkConfigPath) => {
-  const [ transaction, { logs } ] = await Promise.all([
-    web3.eth.getTransaction(prefixHex(txHash)),
-    web3.eth.getTransactionReceipt(prefixHex(txHash))
+/* :: (Web3, string, object) -> Promise<object> */
+const getTransaction = async (web3, txHash, opts) => {
+  const { txHandler, networkConfigPath } = opts
+  const prefixed = prefixHex(txHash)
+  const [ transaction, receipt ] = await Promise.all([
+    web3.eth.getTransaction(prefixed),
+    web3.eth.getTransactionReceipt(prefixed)
   ])
 
-  transaction.logs = logs
-  transaction.enhanced = false
+  let tx = { ...transaction, ...receipt }
 
-  /** Check if the transaction is for a known contract. Return extra info if true. */
-  const { contracts } = await getNetworkConfig(networkConfigPath)
-  const contractInfo = getContractInfo(contracts, transaction.to)
-  if (!isNil(contractInfo)) {
-    abiDecoder.addABI(contractInfo.abi)
-    const info = abiDecoder.decodeMethod(transaction.input)
-
-    transaction.enhanced = true
-    transaction.method = info.name
-    transaction.params = info.params
-    transaction.toName = contractInfo.name
-
-    const eventsSigs = getEventSigs(contractInfo.abi, web3)
-    transaction.logs = getEventLogs(eventsSigs, logs, web3)
+  if (opts.useStandardHandler) {
+    tx = standardTxHandler({ tx, web3, networkConfigPath })
   }
 
-  return transaction
+  if (isFunction(txHandler)) {
+    tx = txHandler({ tx, web3, networkConfigPath })
+  }
+
+  return tx
 }
 
 module.exports = {
-  getEventParams,
-  getEventSigs,
-  getEventLogs,
   getTransactions,
   getTransaction
 }

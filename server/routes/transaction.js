@@ -16,9 +16,9 @@ const getTransactions = web3 => async (ctx) => {
 }
 
 /* GET /api/v1/transactions/:txhash */
-const getTrasaction = (web3, networkConfigPath) => async (ctx) => {
+const getTrasaction = (web3, opts) => async (ctx) => {
   const { txhash } = ctx.params
-  const transaction = await model.getTransaction(web3, txhash, networkConfigPath)
+  const transaction = await model.getTransaction(web3, txhash, opts)
 
   ctx.body = {
     status: 'OK',
@@ -28,7 +28,7 @@ const getTrasaction = (web3, networkConfigPath) => async (ctx) => {
 
 
 /* :: Web3 -> Router */
-const createTxRouter = (web3, networkConfigPath) => {
+const createTxRouter = (web3, opts) => {
   const router = new Router()
 
   router.get(
@@ -48,7 +48,7 @@ const createTxRouter = (web3, networkConfigPath) => {
         txhash: Joi.string().hex().length(64).required()
       })
     }),
-    getTrasaction(web3, networkConfigPath)
+    getTrasaction(web3, opts)
   )
 
   return router
