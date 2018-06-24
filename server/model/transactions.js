@@ -46,11 +46,11 @@ const getTransaction = async (web3, txHash, opts) => {
   let tx = { ...transaction, ...receipt }
 
   if (opts.useStandardHandler) {
-    tx = standardTxHandler({ tx, web3, networkConfigPath })
+    tx = await standardTxHandler({ tx, web3, networkConfigPath })
   }
 
   if (isFunction(txHandler)) {
-    tx = txHandler({ tx, web3, networkConfigPath })
+    tx = await txHandler({ tx, web3, networkConfigPath })
   }
 
   return tx
