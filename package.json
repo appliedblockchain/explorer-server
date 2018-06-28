@@ -7,6 +7,7 @@
   "author": "Tahseen Malik <tahseen@appliedblockchain.com> (https://appliedblockchain.com/)",
   "main": "index.js",
   "scripts": {
+    "test": "jest",
     "postversion": "git push && git push --tags",
     "release:patch": "npm version patch && npm publish",
     "release:minor": "npm version minor && npm publish",
@@ -30,11 +31,13 @@
     "koa-static": "^4.0.3",
     "koa2-validation": "^0.1.0",
     "lodash": "^4.17.10",
+    "ow": "^0.6.0",
     "signale": "^1.0.1",
     "web3": "1.0.0-beta.33"
   },
   "devDependencies": {
     "@appliedblockchain/eslint-config": "^2.2.0",
-    "eslint": "^4.19.1"
+    "eslint": "^4.19.1",
+    "jest": "^23.2.0"
   }
 }
