@@ -5,9 +5,9 @@ const Joi = require('joi')
 const model = require('../model/transactions')
 
 /* GET /api/v1/transactions */
-const getTransactions = web3 => async (ctx) => {
+const getTransactions = async (ctx) => {
   const { limit } = ctx.query
-  const transactions = await model.getTransactions(web3, { limit })
+  const transactions = await model.getTransactions(limit)
 
   ctx.body = {
     status: 'OK',
@@ -29,6 +29,8 @@ const getTrasaction = (web3, opts) => async (ctx) => {
 
 /* :: Web3 -> Router */
 const createTxRouter = (web3, opts) => {
+  model.setup(web3)
+
   const router = new Router()
 
   router.get(
@@ -38,7 +40,7 @@ const createTxRouter = (web3, opts) => {
         limit: Joi.number().positive().integer()
       })
     }),
-    getTransactions(web3)
+    getTransactions
   )
 
   router.get(
