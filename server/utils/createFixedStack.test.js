@@ -67,7 +67,7 @@ describe('createFixedStack()', () => {
 
     it('allows pushing a single item', () => {
       const items = createFixedStack(3, 'foo')
-      const expected = ['bar', 'foo', 'foo']
+      const expected = [ 'bar', 'foo', 'foo' ]
       const actual = items.push('bar')
 
       expect(actual).toEqual(expected)
@@ -75,7 +75,7 @@ describe('createFixedStack()', () => {
 
     it('allows pushing multiple items at once', () => {
       const items = createFixedStack(3, 'foo')
-      const expected = ['baz', 'bar', 'foo']
+      const expected = [ 'baz', 'bar', 'foo' ]
       const actual = items.push('bar', 'baz')
 
       expect(actual).toEqual(expected)
@@ -83,7 +83,7 @@ describe('createFixedStack()', () => {
 
     it('allows pushing items > size and handles overflow', () => {
       const items = createFixedStack(3, 'foo')
-      const expected = [6, 5, 4]
+      const expected = [ 6, 5, 4 ]
       const actual = items.push(1, 2, 3, 4, 5, 6)
 
       expect(actual).toEqual(expected)
