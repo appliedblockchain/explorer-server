@@ -7,10 +7,11 @@
   "author": "Tahseen Malik <tahseen@appliedblockchain.com> (https://appliedblockchain.com/)",
   "main": "index.js",
   "scripts": {
+    "lint": "eslint server",
     "postversion": "git push && git push --tags",
-    "release:patch": "npm version patch && npm publish",
-    "release:minor": "npm version minor && npm publish",
-    "release:major": "npm version major && npm publish"
+    "patch": "npm version patch",
+    "minor": "npm version minor",
+    "major": "npm version major"
   },
   "keywords": [
     "ethereum",
