@@ -1,13 +1,13 @@
 'use strict'
 const { times, flatten, get } = require('lodash')
 const createFixedStack = require('../../utils/createFixedStack')
-const timeout = require('../../utils/timeout')
+const withRetry = require('../../utils/withRetry')
 
 /** Total number of blocks to search Transactions in parallel */
 const BLOCKS_IN_PARALLEL = 100
 const MAX_TXS = 100
 
-/** Transactions Cache. Index 0 is newest Transaction */
+/** Transactions Cache used for serving requests */
 const latestTxs = createFixedStack(MAX_TXS, { hash: '––', loading: true })
 
 
@@ -30,15 +30,11 @@ const getLatestTransactions = async (web3, limit) => {
   let lastBlock = await web3.eth.getBlockNumber()
 
   while (txs.length < limit) {
-    try {
-      const $txs = await fetchTxs(web3, lastBlock, BLOCKS_IN_PARALLEL)
-      txs.push(...$txs)
-      lastBlock -= BLOCKS_IN_PARALLEL
-    } catch (e) {
-      /** @TODO: make this increasing on attempts to a MAX value */
-      await timeout(2500)
-      continue
-    }
+    const args = [ web3, lastBlock, BLOCKS_IN_PARALLEL ]
+    const $txs = await withRetry(fetchTxs, args)()
+
+    txs.push(...$txs)
+    lastBlock -= BLOCKS_IN_PARALLEL
   }
 
   return txs.slice(0, limit)
@@ -69,14 +65,10 @@ const updateLatestTxCache = web3 => async () => {
 
 /* :: () -> Promise<void> */
 const setup = async (web3) => {
-  try {
-    const txs = await getLatestTransactions(web3, MAX_TXS)
-    txs.reverse().forEach((tx) => latestTxs.push(tx))
+  const txs = await withRetry(getLatestTransactions, [ web3, MAX_TXS ])()
+  txs.reverse().forEach((tx) => latestTxs.push(tx))
 
-    setInterval(updateLatestTxCache(web3), 1500)
-  } catch (e) {
-    console.error('Error fethcing initial latest transactions')
-  }
+  setInterval(updateLatestTxCache(web3), 1500)
 }
 
 
