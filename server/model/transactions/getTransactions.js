@@ -13,7 +13,7 @@ const MAX_TXS = 100
 /** Transactions Cache used for serving requests */
 const store = Object.seal({
   lastBlock: null,
-  latestTxs: createFixedStack(MAX_TXS, { hash: '––', loading: true })
+  latestTxs: createFixedStack(MAX_TXS, { hash: '––', blockNumber: '––', empty: true })
 })
 
 
