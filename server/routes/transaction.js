@@ -29,7 +29,7 @@ const getTrasaction = (web3, opts) => async (ctx) => {
 
 /* :: Web3 -> Router */
 const createTxRouter = (web3, opts) => {
-  model.setup(web3)
+  model.setup(web3, opts)
 
   const router = new Router()
 

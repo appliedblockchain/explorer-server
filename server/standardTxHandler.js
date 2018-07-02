@@ -50,4 +50,8 @@ const standardTxHandler = async ({ networkConfigPath, tx, web3 }) => {
   return txWithExtraInfo
 }
 
-module.exports = { standardTxHandler }
+module.exports = {
+  getNetworkConfig,
+  getContractInfo,
+  standardTxHandler
+}

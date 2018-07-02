@@ -1,18 +1,20 @@
 'use strict'
-const { times, flatten, get } = require('lodash')
+const { times, flatten, get, isNil } = require('lodash')
 const validate = require('ow')
+const abiDecoder = require('abi-decoder')
 const createFixedStack = require('../../utils/createFixedStack')
 const withRetry = require('../../utils/withRetry')
+const { getNetworkConfig, getContractInfo } = require('../../standardTxHandler')
 
 /** Total number of blocks to search Transactions in parallel */
 const BLOCKS_IN_PARALLEL = 100
 const MAX_TXS = 100
 
 /** Transactions Cache used for serving requests */
-const store = {
+const store = Object.seal({
   lastBlock: null,
   latestTxs: createFixedStack(MAX_TXS, { hash: '––', loading: true })
-}
+})
 
 
 /**
@@ -63,8 +65,31 @@ const getLatestTransactions = async (web3, limit) => {
 }
 
 
+/* :: (object[], object) -> void */
+const addContractInfo = async (txs, options) => {
+  const { contracts } = await getNetworkConfig(options.networkConfigPath)
+
+  txs.forEach((tx) => {
+    const info = getContractInfo(contracts, tx.to)
+
+    if (isNil(info)) {
+      return
+    }
+
+    abiDecoder.addABI(info.abi)
+    const { params, name: method } = abiDecoder.decodeMethod(tx.input)
+
+    Object.assign(tx, {
+      method,
+      params,
+      contract: info.name
+    })
+  })
+}
+
+
 /* :: () -> Promise<void> */
-const updateLatestTxCache = (web3, store) => async () => {
+const updateLatestTxCache = (web3, options, store) => async () => {
   try {
     const lastBlockInCache = store.lastBlock
     const lastBlock = await web3.eth.getBlockNumber()
@@ -77,6 +102,8 @@ const updateLatestTxCache = (web3, store) => async () => {
     const distance = lastBlock - lastBlockInCache - 1
     const txs = await fetchTxs(web3, lastBlock, distance)
 
+    await addContractInfo(txs, options)
+
     txs.reverse().forEach((tx) => store.latestTxs.push(tx))
     store.lastBlock = lastBlock
   } catch (e) {
@@ -86,16 +113,18 @@ const updateLatestTxCache = (web3, store) => async () => {
 
 
 /* :: () -> Promise<void> */
-const setup = async (web3) => {
+const setup = async (web3, options) => {
   const { txs, lastBlock } = await withRetry(
     getLatestTransactions,
     [ web3, MAX_TXS ]
   )()
 
+  await addContractInfo(txs, options)
+
   txs.reverse().forEach((tx) => store.latestTxs.push(tx))
   store.lastBlock = lastBlock
 
-  setInterval(updateLatestTxCache(web3, store), 1500)
+  setInterval(updateLatestTxCache(web3, options, store), 1500)
 }
 
 
