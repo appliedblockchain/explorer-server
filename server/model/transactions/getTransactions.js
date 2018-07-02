@@ -1,5 +1,6 @@
 'use strict'
 const { times, flatten, get } = require('lodash')
+const validate = require('ow')
 const createFixedStack = require('../../utils/createFixedStack')
 const withRetry = require('../../utils/withRetry')
 
@@ -8,16 +9,33 @@ const BLOCKS_IN_PARALLEL = 100
 const MAX_TXS = 100
 
 /** Transactions Cache used for serving requests */
-const latestTxs = createFixedStack(MAX_TXS, { hash: '––', loading: true })
+const store = {
+  lastBlock: null,
+  latestTxs: createFixedStack(MAX_TXS, { hash: '––', loading: true })
+}
 
+
+/**
+ A helper function for getting transactions from multiple blocks at a time.
+ @example
+   fetchTxs(web3, 100, 5)
+   - Gives all txs for block [100, 99, 98, 97, 96, 95]
+
+ [1]. Block number is 0 index based so distance must be <= block number.
+ [2]. Block can be null if block number given does not exist in the chain.
+ */
 
 /* :: (object, number, number) -> Promise<object> */
 const fetchTxs = async (web3, blockNumber, distance) => {
-  const promises = times(distance)
+  validate(blockNumber, validate.number.greaterThanOrEqual(0))
+  validate(distance, validate.number.greaterThanOrEqual(0))
+
+  const totalReqs = Math.min(blockNumber, distance) + 1 /* [1] */
+  const promises = times(totalReqs)
     .map(i => web3.eth.getBlock(blockNumber - i, true))
 
   const blocks = await Promise.all(promises)
-  const txs = blocks.map((block) => get(block, 'transactions', []))
+  const txs = blocks.map((block) => get(block, 'transactions', [])) /* [2] */
 
   return flatten(txs)
 }
@@ -27,25 +45,28 @@ const fetchTxs = async (web3, blockNumber, distance) => {
 const getLatestTransactions = async (web3, limit) => {
   const txs = []
 
-  let lastBlock = await web3.eth.getBlockNumber()
+  const lastBlock = await web3.eth.getBlockNumber()
+  let currBlock = lastBlock
 
-  while (txs.length < limit) {
-    const args = [ web3, lastBlock, BLOCKS_IN_PARALLEL ]
+  while (txs.length < limit && currBlock >= 0) {
+    const args = [ web3, currBlock, BLOCKS_IN_PARALLEL - 1 ]
     const $txs = await withRetry(fetchTxs, args)()
 
     txs.push(...$txs)
-    lastBlock -= BLOCKS_IN_PARALLEL
+    currBlock -= BLOCKS_IN_PARALLEL
   }
 
-  return txs.slice(0, limit)
+  return {
+    lastBlock,
+    txs: txs.slice(0, limit)
+  }
 }
 
 
 /* :: () -> Promise<void> */
-const updateLatestTxCache = web3 => async () => {
+const updateLatestTxCache = (web3, store) => async () => {
   try {
-    const [ newestTx ] = latestTxs.retrieve()
-    const { blockNumber: lastBlockInCache } = newestTx
+    const lastBlockInCache = store.lastBlock
     const lastBlock = await web3.eth.getBlockNumber()
 
     /** Nothing to update */
@@ -53,10 +74,11 @@ const updateLatestTxCache = web3 => async () => {
       return
     }
 
-    const blocksToCheck = lastBlock - lastBlockInCache
-    const txs = await fetchTxs(web3, lastBlock, blocksToCheck)
+    const distance = lastBlock - lastBlockInCache - 1
+    const txs = await fetchTxs(web3, lastBlock, distance)
 
-    txs.reverse().forEach((tx) => latestTxs.push(tx))
+    txs.reverse().forEach((tx) => store.latestTxs.push(tx))
+    store.lastBlock = lastBlock
   } catch (e) {
     console.error('Error trying to update latest Transactions cache.')
   }
@@ -65,19 +87,25 @@ const updateLatestTxCache = web3 => async () => {
 
 /* :: () -> Promise<void> */
 const setup = async (web3) => {
-  const txs = await withRetry(getLatestTransactions, [ web3, MAX_TXS ])()
-  txs.reverse().forEach((tx) => latestTxs.push(tx))
+  const { txs, lastBlock } = await withRetry(
+    getLatestTransactions,
+    [ web3, MAX_TXS ]
+  )()
 
-  setInterval(updateLatestTxCache(web3), 1500)
+  txs.reverse().forEach((tx) => store.latestTxs.push(tx))
+  store.lastBlock = lastBlock
+
+  setInterval(updateLatestTxCache(web3, store), 1500)
 }
 
 
 /* :: () -> object[] */
 const getTransactions = (limit = 10) =>
-  latestTxs.retrieve(Math.min(limit, MAX_TXS))
+  store.latestTxs.retrieve(Math.min(limit, MAX_TXS))
 
 
 module.exports = {
+  fetchTxs,
   setup,
   getTransactions
 }
