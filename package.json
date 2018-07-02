@@ -1,6 +1,6 @@
 {
   "name": "@appliedblockchain/block-explorer-server",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Server component for Applied Blockchain block explorer",
   "license": "UNLICENSED",
   "repository": "appliedblockchain/block-explorer-server",
