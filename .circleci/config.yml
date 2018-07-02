@@ -25,6 +25,9 @@ workflows:
     jobs:
       - build:
           context: org-global
+          filters:
+            tags:
+              only: /.*/
       - publish:
           context: org-global
           requires:
