@@ -37,7 +37,12 @@ const fetchTxs = async (web3, blockNumber, distance) => {
     .map(i => web3.eth.getBlock(blockNumber - i, true))
 
   const blocks = await Promise.all(promises)
-  const txs = blocks.map((block) => get(block, 'transactions', [])) /* [2] */
+  const txs = blocks.map((block) => {
+    const currBlockTxs = get(block, 'transactions', []) /* [2] */
+    const timestamp = get(block, 'timestamp') /* [2] */
+
+    return currBlockTxs.map(tx => ({ ...tx, timestamp }))
+  })
 
   return flatten(txs)
 }

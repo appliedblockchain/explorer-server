@@ -14,6 +14,10 @@ const getTransaction = async (web3, txHash, opts) => {
 
   let tx = { ...transaction, ...receipt }
 
+  /* @NOTE: Need to make an extra request to get the timestamp */
+  const { timestamp } = await web3.eth.getBlock(tx.blockNumber)
+  Object.assign(tx, { timestamp })
+
   if (opts.useStandardHandler) {
     tx = await standardTxHandler({ tx, web3, networkConfigPath })
   }
