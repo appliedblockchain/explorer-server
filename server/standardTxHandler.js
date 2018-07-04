@@ -23,7 +23,7 @@ const getContractInfo = (contracts, address) => {
 /* :: object -> object */
 const standardTxHandler = async ({ networkConfigPath, tx, web3 }) => {
   const { contracts } = await getNetworkConfig(networkConfigPath)
-  const contractInfo = getContractInfo(contracts, tx.to) /* [1] */
+  const contractInfo = getContractInfo(contracts, tx.to || tx.creates) /* [1] */
 
   if (isNil(contractInfo)) {
     return tx
