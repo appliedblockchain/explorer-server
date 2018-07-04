@@ -2,32 +2,9 @@
 const Router = require('koa-router')
 const validate = require('koa2-validation')
 const Joi = require('joi')
-const { isString } = require('lodash')
-const { isPrefixedHex, isUnprefixedHex, prefixHex } = require('@appliedblockchain/bdash')
+const { isPrefixedHex, prefixHex } = require('@appliedblockchain/bdash')
 const { getBlockOrTx } = require('../model/search.js')
-
-/* any -> boolean */
-const isHash = val => {
-  if (!isString(val)) {
-    return false
-  }
-
-  switch (val.length) {
-    case 64:
-      return isUnprefixedHex(val)
-    case 66:
-      return isPrefixedHex(val)
-    default:
-      return false
-  }
-}
-
-/* string -> boolean */
-const strIsInt = str => {
-  const p = parseInt(str, 10)
-
-  return !Number.isNaN(p) && String(p).length === str.length
-}
+const { isHash, strIsInt } = require('../utils')
 
 /* GET /search */
 const search = web3 => async (ctx) => {
