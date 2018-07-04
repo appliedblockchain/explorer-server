@@ -5,6 +5,9 @@ const abiDecoder = require('abi-decoder')
 const createFixedStack = require('../../utils/createFixedStack')
 const withRetry = require('../../utils/withRetry')
 const { getNetworkConfig, getContractInfo } = require('../../standardTxHandler')
+const debugWithScope = require('../../utils/debug')
+
+const debug = debugWithScope('model.transactions')
 
 /** Total number of blocks to search Transactions in parallel */
 const BLOCKS_IN_PARALLEL = 100
@@ -28,9 +31,18 @@ const store = Object.seal({
  */
 
 /* :: (object, number, number) -> Promise<object> */
-const fetchTxs = async (web3, blockNumber, distance) => {
+const fetchTxs = async (
+  web3,
+  blockNumber,
+  distance,
+  { log = false } = {}
+) => {
   validate(blockNumber, validate.number.greaterThanOrEqual(0))
   validate(distance, validate.number.greaterThanOrEqual(0))
+
+  if (log) {
+    debug(`fetchTxs(blockNumber: ${blockNumber}, distance: ${distance})`)
+  }
 
   const totalReqs = Math.min(blockNumber, distance) + 1 /* [1] */
   const promises = times(totalReqs)
@@ -56,7 +68,7 @@ const getLatestTransactions = async (web3, limit) => {
   let currBlock = lastBlock
 
   while (txs.length < limit && currBlock >= 0) {
-    const args = [ web3, currBlock, BLOCKS_IN_PARALLEL - 1 ]
+    const args = [ web3, currBlock, BLOCKS_IN_PARALLEL - 1, { log: true } ]
     const $txs = await withRetry(fetchTxs, args)()
 
     txs.push(...$txs)
@@ -105,7 +117,10 @@ const updateLatestTxCache = (web3, options, store) => async () => {
     }
 
     const distance = lastBlock - lastBlockInCache - 1
+
+    debug(`Fetching transactions for blocks ${lastBlockInCache - 1}–${lastBlock} to update cache`)
     const txs = await fetchTxs(web3, lastBlock, distance)
+    debug(`Found ${txs.length} transactions for blocks ${lastBlockInCache - 1}–${lastBlock} to update cache`)
 
     await addContractInfo(txs, options)
 
@@ -119,12 +134,20 @@ const updateLatestTxCache = (web3, options, store) => async () => {
 
 /* :: () -> Promise<void> */
 const setup = async (web3, options) => {
-  const { txs, lastBlock } = await withRetry(
+  const $getLatestTransactions = withRetry(
     getLatestTransactions,
-    [ web3, MAX_TXS ]
-  )()
+    [ web3, MAX_TXS ],
+    {
+      onFail(err, attempts) {
+        debug(`Error trying to fetch ${MAX_TXS} latest transactions after ${attempts} attempts. Ethereum client might be down`)
+      }
+    }
+  )
 
+  debug(`Fetching ${MAX_TXS} latest transaction for the first time`)
+  const { txs, lastBlock } = await $getLatestTransactions()
   await addContractInfo(txs, options)
+  debug(`Finished fetching ${txs.length} latest transactions for the first time (last block ${lastBlock})`)
 
   txs.reverse().forEach((tx) => store.latestTxs.push(tx))
   store.lastBlock = lastBlock

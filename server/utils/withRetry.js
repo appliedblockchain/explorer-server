@@ -31,7 +31,7 @@ const withRetry = (
         return result
       } catch (e) {
         if (isFunction(onFail)) {
-          await onFail(e)
+          await onFail(e, attempts, time)
         }
 
         if (wait) {
