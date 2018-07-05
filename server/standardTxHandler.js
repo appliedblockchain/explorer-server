@@ -1,13 +1,14 @@
 'use strict'
-const { isNil, first, pickBy } = require('lodash')
+const { isNil, first, pickBy, isString, get } = require('lodash')
 const abiDecoder = require('abi-decoder')
 const getNetworkConfig = require('./getNetworkConfig')
 const { standardLogHandler } = require('./standardLogHandler')
 
 /* :: (object, string) -> ?object */
-const getContractInfo = (contracts, address) => {
+const getContractInfo = (contracts, _address) => {
+  const address = _address.toLowerCase()
   const hasAddress = ({ deployments = [] }) =>
-    deployments.some(deployment => address === deployment.address)
+    deployments.some(deployment => address === deployment.address.toLowerCase())
   const contract = pickBy(contracts, hasAddress)
 
   return first(Object.values(contract))
@@ -29,15 +30,26 @@ const standardTxHandler = async ({ networkConfigPath, tx, web3 }) => {
     return tx
   }
 
-  abiDecoder.addABI(contractInfo.abi)
+  let method
+  let params
 
-  const { params, name: method } = abiDecoder.decodeMethod(tx.input)
+  abiDecoder.addABI(contractInfo.abi)
+  const decodedMethod = abiDecoder.decodeMethod(tx.input)
+
+  /** Handle contract creation. i.e tx.to is empty */
+  if (isString(tx.to)) {
+    method = decodedMethod.method
+    params = decodedMethod.params
+  } else {
+    method = contractInfo.name
+    params = get(decodedMethod, 'params')
+  }
+
   const logs = await standardLogHandler({
     tx,
     web3,
     abi: contractInfo.abi
   })
-
   const txWithExtraInfo = {
     ...tx,
     logs,
