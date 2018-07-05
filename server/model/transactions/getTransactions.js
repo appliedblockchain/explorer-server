@@ -1,5 +1,5 @@
 'use strict'
-const { times, flatten, get, isNil } = require('lodash')
+const { times, flatten, get, isNil, pick } = require('lodash')
 const validate = require('ow')
 const abiDecoder = require('abi-decoder')
 const createFixedStack = require('../../utils/createFixedStack')
@@ -53,7 +53,9 @@ const fetchTxs = async (
     const currBlockTxs = get(block, 'transactions', []) /* [2] */
     const timestamp = get(block, 'timestamp') /* [2] */
 
-    return currBlockTxs.map(tx => ({ ...tx, timestamp }))
+    return currBlockTxs
+      .map(tx => pick(tx, 'hash', 'blockNumber'))
+      .map(tx => ({ ...tx, timestamp }))
   })
 
   return flatten(txs)
