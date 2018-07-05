@@ -54,7 +54,7 @@ const fetchTxs = async (
     const timestamp = get(block, 'timestamp') /* [2] */
 
     return currBlockTxs
-      .map(tx => pick(tx, 'hash', 'blockNumber'))
+      .map(tx => pick(tx, 'hash', 'blockNumber', 'to', 'input'))
       .map(tx => ({ ...tx, timestamp }))
   })
 
