@@ -2,12 +2,12 @@
 const Router = require('koa-router')
 const validate = require('koa2-validation')
 const Joi = require('joi')
-const { getBlocks: $getBlocks } = require('../model/blocks')
+const model = require('../model/blocks')
 
 /* GET /api/v1/blocks */
 const getBlocks = web3 => async (ctx) => {
-  const { order, limit, offset } = ctx.query
-  const blocks = await $getBlocks(web3, { order, limit, offset })
+  const { limit } = ctx.query
+  const blocks = await model.getBlocks(web3, limit)
 
   ctx.body = {
     status: 'OK',
@@ -29,15 +29,15 @@ const getBlock = web3 => async (ctx) => {
 
 /* :: Web3 -> Router */
 const createBlockRouter = (web3) => {
+  model.setup(web3)
+
   const router = new Router()
 
   router.get(
     '/blocks',
     validate({
       query: Joi.object({
-        limit: Joi.number().positive().integer(),
-        offset: Joi.number().integer(),
-        order: Joi.string().only('asc', 'desc')
+        limit: Joi.number().positive().integer()
       })
     }),
     getBlocks(web3)
