@@ -9,7 +9,6 @@ const MAX_BLOCKS = 100
 
 /** Transactions Cache used for serving requests */
 const store = Object.seal({
-  lastBlock: null,
   latestBlocks: createFixedStack(MAX_BLOCKS, {
     number: '––',
     miner: '––',
@@ -35,7 +34,7 @@ const fetchBlocks = async (web3, begin, end) => {
   const blocks = await Promise.all(blocksPromise)
 
   return reject(blocks, isNull)
-    .map(b => pick(b, 'number', 'miner', 'transactions')) /* [2] */
+    .map(b => pick(b, 'number', 'miner', 'transactions', 'timestamp')) /* [2] */
 }
 
 
@@ -43,7 +42,7 @@ const fetchBlocks = async (web3, begin, end) => {
 const updateLatestBlocksCache = (web3, store) => async () => {
   try {
     const lastBlock = await web3.eth.getBlockNumber()
-    const lastBlockInCache = store.lastBlock
+    const lastBlockInCache = store.latestBlocks.retrieve().number
 
     /** Nothing to update */
     if (lastBlock === lastBlockInCache) {
@@ -52,7 +51,6 @@ const updateLatestBlocksCache = (web3, store) => async () => {
 
     const blocks = await fetchBlocks(web3, lastBlockInCache + 1, lastBlock)
 
-    store.lastBlock = lastBlock
     blocks.reverse().forEach(b => store.latestBlocks.push(b))
   } catch (e) {
     debug('Error trying to update latest Blocks cache.')
@@ -65,15 +63,15 @@ const setup = async (web3) => {
   debug(`Setting up initial cache of latest ${MAX_BLOCKS} blocks`)
 
   const lastBlock = await withRetry(web3.eth.getBlockNumber.bind(web3.eth))()
+  const earliestBlock = Math.max(lastBlock - MAX_BLOCKS + 1, 0)
+
   const blocks = await withRetry(
     fetchBlocks,
-    [ web3, lastBlock - MAX_BLOCKS - 1, lastBlock ]
+    [ web3, earliestBlock, lastBlock ]
   )()
 
   /** Update cache */
-  store.lastBlock = lastBlock
   blocks.reverse().forEach(b => store.latestBlocks.push(b))
-
   debug(`Initial cache of latest ${MAX_BLOCKS} blocks is set`)
 
   setInterval(updateLatestBlocksCache(web3, store), 1500)
