@@ -1,5 +1,5 @@
 'use strict'
-const { times, flatten, get, isNil, pick } = require('lodash')
+const { times, flatten, get, isNil, pick, isObject } = require('lodash')
 const validate = require('ow')
 const abiDecoder = require('abi-decoder')
 const createFixedStack = require('../../utils/createFixedStack')
@@ -16,7 +16,8 @@ const MAX_TXS = 100
 /** Transactions Cache used for serving requests */
 const store = Object.seal({
   lastBlock: null,
-  latestTxs: createFixedStack(MAX_TXS, { hash: '––', blockNumber: '––', empty: true })
+  isSynching: true,
+  latestTxs: createFixedStack(MAX_TXS)
 })
 
 
@@ -70,7 +71,7 @@ const getLatestTransactions = async (web3, limit) => {
   let currBlock = lastBlock
 
   while (txs.length < limit && currBlock >= 0) {
-    const args = [ web3, currBlock, BLOCKS_IN_PARALLEL - 1, { log: true } ]
+    const args = [ web3, currBlock, BLOCKS_IN_PARALLEL - 1, { log: false } ]
     const $txs = await withRetry(fetchTxs, args)()
 
     txs.push(...$txs)
@@ -153,14 +154,21 @@ const setup = async (web3, options) => {
 
   txs.reverse().forEach((tx) => store.latestTxs.push(tx))
   store.lastBlock = lastBlock
+  store.isSynching = false
 
   setInterval(updateLatestTxCache(web3, options, store), 1500)
 }
 
 
 /* :: () -> object[] */
-const getTransactions = (limit = 10) =>
-  store.latestTxs.retrieve(Math.min(limit, MAX_TXS))
+const getTransactions = (limit = 10) => {
+  const transactions = store.latestTxs
+    .retrieve(Math.min(limit, MAX_TXS))
+    .filter(isObject)
+  const { isSynching } = store
+
+  return { transactions, isSynching }
+}
 
 
 module.exports = {

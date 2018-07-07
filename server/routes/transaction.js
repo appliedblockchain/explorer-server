@@ -5,13 +5,14 @@ const Joi = require('joi')
 const model = require('../model/transactions')
 
 /* GET /api/v1/transactions */
-const getTransactions = async (ctx) => {
+const getTransactions = (ctx) => {
   const { limit } = ctx.query
-  const transactions = await model.getTransactions(limit)
+  const { transactions, isSynching } = model.getTransactions(limit)
 
   ctx.body = {
     status: 'OK',
-    data: transactions
+    data: transactions,
+    isSynching
   }
 }
 

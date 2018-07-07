@@ -1,5 +1,5 @@
 'use strict'
-const { times, reject, isNull, pick } = require('lodash')
+const { times, reject, isNull, pick, isObject } = require('lodash')
 const createFixedStack = require('../../utils/createFixedStack')
 const { withRetry } = require('../../utils')
 const debugWithScope = require('../../utils/debug')
@@ -9,12 +9,7 @@ const MAX_BLOCKS = 100
 
 /** Transactions Cache used for serving requests */
 const store = Object.seal({
-  latestBlocks: createFixedStack(MAX_BLOCKS, {
-    number: '––',
-    miner: '––',
-    transactions: [],
-    empty: true
-  })
+  latestBlocks: createFixedStack(MAX_BLOCKS)
 })
 
 /**
@@ -80,7 +75,9 @@ const setup = async (web3) => {
 
 /* :: (Web3, number) -> object[] */
 const getBlocks = (web3, limit = 10) =>
-  store.latestBlocks.retrieve(Math.min(MAX_BLOCKS, limit))
+  store.latestBlocks
+    .retrieve(Math.min(MAX_BLOCKS, limit))
+    .filter(isObject)
 
 
 module.exports = {

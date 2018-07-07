@@ -2,16 +2,18 @@
 const Router = require('koa-router')
 const validate = require('koa2-validation')
 const Joi = require('joi')
+const { isEmpty } = require('lodash')
 const model = require('../model/blocks')
 
 /* GET /api/v1/blocks */
-const getBlocks = web3 => async (ctx) => {
+const getBlocks = web3 => (ctx) => {
   const { limit } = ctx.query
-  const blocks = await model.getBlocks(web3, limit)
+  const blocks = model.getBlocks(web3, limit)
 
   ctx.body = {
     status: 'OK',
-    data: blocks
+    data: blocks,
+    isSynching: isEmpty(blocks)
   }
 }
 
