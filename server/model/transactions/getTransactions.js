@@ -102,7 +102,7 @@ const addContractInfo = async (txs, options) => {
     const params = get(decodedMethod, 'params', [])
     const method = isString(tx.creates)
       ? info.name
-      : get(decodedMethod, 'method')
+      : get(decodedMethod, 'name')
 
     Object.assign(tx, {
       method,

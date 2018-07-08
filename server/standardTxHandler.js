@@ -38,7 +38,7 @@ const standardTxHandler = async ({ networkConfigPath, tx, web3 }) => {
 
   /** Handle contract creation. i.e tx.to is empty */
   if (isString(tx.to)) {
-    method = decodedMethod.method
+    method = decodedMethod.name
     params = decodedMethod.params
   } else {
     method = contractInfo.name
