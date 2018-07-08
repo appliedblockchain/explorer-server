@@ -4,6 +4,7 @@ const validate = require('koa2-validation')
 const Joi = require('joi')
 const { isEmpty } = require('lodash')
 const model = require('../model/blocks')
+const { addContractInfo } = require('../model/transactions')
 
 /* GET /api/v1/blocks */
 const getBlocks = web3 => (ctx) => {
@@ -18,9 +19,11 @@ const getBlocks = web3 => (ctx) => {
 }
 
 /* GET /api/v1/blocks/:number */
-const getBlock = web3 => async (ctx) => {
+const getBlock = (web3, options) => async (ctx) => {
   const blockNumber = parseInt(ctx.params.number, 10)
-  const block = await web3.eth.getBlock(blockNumber)
+  const block = await web3.eth.getBlock(blockNumber, true)
+
+  await addContractInfo(block.transactions, options)
 
   ctx.body = {
     status: 'OK',
@@ -30,7 +33,7 @@ const getBlock = web3 => async (ctx) => {
 
 
 /* :: Web3 -> Router */
-const createBlockRouter = (web3) => {
+const createBlockRouter = (web3, options) => {
   model.setup(web3)
 
   const router = new Router()
@@ -52,7 +55,7 @@ const createBlockRouter = (web3) => {
         number: Joi.number().integer().required()
       })
     }),
-    getBlock(web3)
+    getBlock(web3, options)
   )
 
   return router

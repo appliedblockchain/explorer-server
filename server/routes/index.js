@@ -12,7 +12,7 @@ const createAPIRoutes = (web3, opts) => {
   const config = opts.prefix ? { prefix: opts.prefix } : {}
   const api = new Router(config)
 
-  const blocks = createBlockRouter(web3)
+  const blocks = createBlockRouter(web3, opts)
   const transactions = createTxRouter(web3, opts)
   const search = createSearchRouter(web3)
   const network = createNetworkRouter(web3)

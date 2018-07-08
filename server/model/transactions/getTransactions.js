@@ -174,5 +174,6 @@ const getTransactions = (limit = 10) => {
 module.exports = {
   fetchTxs,
   setup,
-  getTransactions
+  getTransactions,
+  addContractInfo
 }
