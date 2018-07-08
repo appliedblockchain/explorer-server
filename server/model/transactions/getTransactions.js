@@ -1,5 +1,5 @@
 'use strict'
-const { times, flatten, get, isNil, pick, isObject } = require('lodash')
+const { times, flatten, get, isNil, pick, isObject, isString } = require('lodash')
 const validate = require('ow')
 const abiDecoder = require('abi-decoder')
 const createFixedStack = require('../../utils/createFixedStack')
@@ -90,14 +90,19 @@ const addContractInfo = async (txs, options) => {
   const { contracts } = await getNetworkConfig(options.networkConfigPath)
 
   txs.forEach((tx) => {
-    const info = getContractInfo(contracts, tx.to)
+    const info = getContractInfo(contracts, tx.to || tx.creates)
 
     if (isNil(info)) {
       return
     }
 
     abiDecoder.addABI(info.abi)
-    const { params, name: method } = abiDecoder.decodeMethod(tx.input)
+
+    const decodedMethod = abiDecoder.decodeMethod(tx.input)
+    const params = get(decodedMethod, 'params', [])
+    const method = isString(tx.creates)
+      ? info.name
+      : get(decodedMethod, 'method')
 
     Object.assign(tx, {
       method,
