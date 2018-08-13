@@ -17,14 +17,15 @@ jobs:
           paths:
             - node_modules
       - persist_to_workspace:
-          root: ~
+          root: .
+          paths: .
 
   test:
     docker:
       - image: circleci/node:10
     steps:
       - attach_workspace:
-          at: ~
+          at: .
       - run: npm test
 
   publish:
