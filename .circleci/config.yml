@@ -37,6 +37,7 @@ jobs:
           command: echo "//registry.npmjs.org/:_authToken=$PRIVATE_NPM_TOKEN" > ~/.npmrc
       - run: npm publish
 
+
 workflows:
   version: 2
   main:
