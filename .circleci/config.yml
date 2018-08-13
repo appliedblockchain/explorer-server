@@ -9,7 +9,12 @@ jobs:
           name: Authorize NPM
           command: echo "//registry.npmjs.org/:_authToken=$PRIVATE_NPM_TOKEN" > ~/.npmrc
       - run: npm install
-      - run: npm run lint
+      - persist_to_workspace
+
+  test:
+    steps:
+      - attach_workspace
+      - run: npm test
 
   publish:
     docker:
@@ -26,15 +31,23 @@ workflows:
   version: 2
   main:
     jobs:
-      - build:
+      - build_and_test:
           context: org-global
           filters:
             tags:
               only: /.*/
+          jobs:
+            - build
+            - test:
+                requires:
+                  - build
       - publish:
           context: org-global
           requires:
             - build
+            - test:
+                requires:
+                  - build
           filters:
             tags:
               only: /v.*/
