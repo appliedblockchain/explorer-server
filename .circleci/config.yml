@@ -26,8 +26,7 @@ jobs:
     steps:
       - attach_workspace:
           at: .
-      - run: npm test
-
+      - run: npm run lint
 
   test:
     docker:
