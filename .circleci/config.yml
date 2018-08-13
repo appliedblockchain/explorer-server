@@ -16,7 +16,8 @@ jobs:
           key: node_modules-{{ checksum "package-lock.json" }}
           paths:
             - node_modules
-      - persist_to_workspace
+      - persist_to_workspace:
+          root: ~
 
   test:
     docker:
