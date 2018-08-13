@@ -20,6 +20,15 @@ jobs:
           root: .
           paths: .
 
+  lint:
+    docker:
+      - image: circleci/node:10
+    steps:
+      - attach_workspace:
+          at: .
+      - run: npm test
+
+
   test:
     docker:
       - image: circleci/node:10
@@ -32,6 +41,8 @@ jobs:
     docker:
       - image: circleci/node:10
     steps:
+      - attach_workspace:
+          at: .
       - run:
           name: Authorize NPM
           command: echo "//registry.npmjs.org/:_authToken=$PRIVATE_NPM_TOKEN" > ~/.npmrc
@@ -42,6 +53,12 @@ workflows:
   main:
     jobs:
       - build
+      - lint:
+          requires:
+            - build
+          filters:
+            tags:
+              only: /.*/
       - test:
           requires:
             - build
@@ -50,6 +67,7 @@ workflows:
               only: /.*/
       - publish:
           requires:
+            - lint
             - test
           filters:
             tags:
