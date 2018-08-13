@@ -5,15 +5,25 @@ jobs:
       - image: circleci/node:10
     steps:
       - checkout
+      - restore_cache:
+          name: Restore node modules cache
+          key: node_modules-{{ checksum "package-lock.json" }}
       - run:
           name: Authorize NPM
           command: echo "//registry.npmjs.org/:_authToken=$PRIVATE_NPM_TOKEN" > ~/.npmrc
       - run: npm install
+      - save_cache:
+          key: node_modules-{{ checksum "package-lock.json" }}
+          paths:
+            - node_modules
+      - persist_to_workspace
 
   test:
     docker:
       - image: circleci/node:10
     steps:
+      - attach_workspace:
+          at: ~
       - run: npm test
 
   publish:
