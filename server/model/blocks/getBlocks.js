@@ -37,7 +37,7 @@ const fetchBlocks = async (web3, begin, end) => {
 const updateLatestBlocksCache = (web3, store) => async () => {
   try {
     const lastBlock = await web3.eth.getBlockNumber()
-    const lastBlockInCache = store.latestBlocks.retrieve().number
+    const [ { number: lastBlockInCache } ] = store.latestBlocks.retrieve()
 
     /** Nothing to update */
     if (lastBlock === lastBlockInCache) {
