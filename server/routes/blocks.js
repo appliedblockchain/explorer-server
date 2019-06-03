@@ -23,6 +23,10 @@ const getBlock = (web3, options) => async (ctx) => {
   const blockNumber = parseInt(ctx.params.number, 10)
   const block = await web3.eth.getBlock(blockNumber, true)
 
+  if (!block) {
+    ctx.throw(404, 'Block not found')
+  }
+
   await addContractInfo(block.transactions, options)
 
   ctx.body = {
